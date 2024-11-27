@@ -1,6 +1,7 @@
 import React from 'react'
 import { ICard } from '../types'
-import { StarFilled } from '@ant-design/icons'
+// import { StarFilled } from '@ant-design/icons'
+import StarFilled from "@ant-design/icons"
 import './CardItem.scss'
 
 interface ICardItemProps {
