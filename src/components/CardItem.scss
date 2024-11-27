@@ -1,0 +1,11 @@
+.card-item-container {
+  .limit-line {
+    display: -webkit-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-wrap: break-word;
+    -webkit-box-orient: vertical;
+    word-break: break-word;
+    -webkit-line-clamp: 3;
+  }
+}
