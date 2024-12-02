@@ -1,0 +1,345 @@
+{
+  "products": [
+    {
+      "key": 1,
+      "name": "Gaming Laptop",
+      "price": 1200,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.5,
+      "description": "High-performance gaming laptop with powerful graphics.",
+      "categories": ["Electronics", "Computers"],
+      "freeShipping": true,
+      "brand": "ASUS"
+    },
+    {
+      "key": 2,
+      "name": "Wireless Headphones",
+      "price": 200,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.8,
+      "description": "Noise-cancelling wireless headphones with long battery life.",
+      "categories": ["Electronics", "Audio"],
+      "freeShipping": true,
+      "brand": "Sony"
+    },
+    {
+      "key": 3,
+      "name": "Smartphone",
+      "price": 800,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.7,
+      "description": "Flagship smartphone with cutting-edge features.",
+      "categories": ["Electronics", "Smartphones"],
+      "freeShipping": false,
+      "brand": "Samsung"
+    },
+    {
+      "key": 4,
+      "name": "Office Chair",
+      "price": 150,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.2,
+      "description": "Ergonomic office chair for comfortable working.",
+      "categories": ["Home & Kitchen", "Furniture"],
+      "freeShipping": true,
+      "brand": "IkeaKie"
+    },
+    {
+      "key": 5,
+      "name": "Cookware Set",
+      "price": 100,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.4,
+      "description": "Non-stick cookware set for everyday cooking.",
+      "categories": ["Home & Kitchen", "Cookware"],
+      "freeShipping": false,
+      "brand": "Tefal"
+    },
+    {
+      "key": 6,
+      "name": "Electric Kettle",
+      "price": 40,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.6,
+      "description": "Fast-boiling electric kettle with automatic shutoff.",
+      "categories": ["Home & Kitchen", "Appliances"],
+      "freeShipping": true,
+      "brand": "Philips"
+    },
+    {
+      "key": 7,
+      "name": "Board Game",
+      "price": 25,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.9,
+      "description": "Fun and engaging board game for all ages.",
+      "categories": ["Toys & Games", "Board Games"],
+      "freeShipping": false,
+      "brand": "Hasbro"
+    },
+    {
+      "key": 8,
+      "name": "Fitness Tracker",
+      "price": 120,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.3,
+      "description": "Track your workouts and monitor your health.",
+      "categories": ["Sports & Outdoors", "Fitness"],
+      "freeShipping": true,
+      "brand": "Fitbit"
+    },
+    {
+      "key": 9,
+      "name": "Camping Tent",
+      "price": 250,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.7,
+      "description": "Spacious and weather-resistant camping tent.",
+      "categories": ["Sports & Outdoors", "Camping"],
+      "freeShipping": true,
+      "brand": "Coleman"
+    },
+    {
+      "key": 10,
+      "name": "Fiction Novel",
+      "price": 20,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.8,
+      "description": "Bestselling fiction novel by a popular author.",
+      "categories": ["Books", "Fiction"],
+      "freeShipping": false,
+      "brand": "Penguin Books"
+    },
+    {
+      "key": 11,
+      "name": "Skin Care Set",
+      "price": 80,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.5,
+      "description": "Complete skin care set for radiant skin.",
+      "categories": ["Beauty & Personal Care", "Skin Care"],
+      "freeShipping": true,
+      "brand": "Neutrogena"
+    },
+    {
+      "key": 12,
+      "name": "Foundation Makeup",
+      "price": 35,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.3,
+      "description": "Long-lasting and lightweight foundation makeup.",
+      "categories": ["Beauty & Personal Care", "Makeup"],
+      "freeShipping": false,
+      "brand": "Maybelline"
+    },
+    {
+      "key": 13,
+      "name": "Electric Drill",
+      "price": 90,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.6,
+      "description": "Powerful and compact electric drill for DIY projects.",
+      "categories": ["Home & Kitchen", "Appliances"],
+      "freeShipping": true,
+      "brand": "Bosch"
+    },
+    {
+      "key": 14,
+      "name": "Smartwatch",
+      "price": 300,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.7,
+      "description": "Smartwatch with fitness tracking and notifications.",
+      "categories": ["Electronics", "Wearables"],
+      "freeShipping": false,
+      "brand": "Apple"
+    },
+    {
+      "key": 15,
+      "name": "Running Shoes",
+      "price": 120,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.8,
+      "description": "Lightweight and comfortable running shoes.",
+      "categories": ["Fashion", "Shoes"],
+      "freeShipping": true,
+      "brand": "Nike"
+    },
+    {
+      "key": 16,
+      "name": "Leather Wallet",
+      "price": 60,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.2,
+      "description": "Premium leather wallet with multiple compartments.",
+      "categories": ["Fashion", "Accessories"],
+      "freeShipping": false,
+      "brand": "Coach"
+    },
+    {
+      "key": 17,
+      "name": "LED Desk Lamp",
+      "price": 45,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.6,
+      "description": "Adjustable LED desk lamp with brightness settings.",
+      "categories": ["Home & Kitchen", "Lighting"],
+      "freeShipping": true,
+      "brand": "IkeaKie"
+    },
+    {
+      "key": 18,
+      "name": "Non-Fiction Book",
+      "price": 22,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.5,
+      "description": "Inspirational and informative non-fiction book.",
+      "categories": ["Books", "Non-Fiction"],
+      "freeShipping": false,
+      "brand": "HarperCollins"
+    },
+    {
+      "key": 19,
+      "name": "Smart Thermostat",
+      "price": 200,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.8,
+      "description": "Smart thermostat with remote control via app.",
+      "categories": ["Electronics", "Smart Home"],
+      "freeShipping": true,
+      "brand": "Nest"
+    },
+    {
+      "key": 20,
+      "name": "Yoga Mat",
+      "price": 30,
+      "image": "https://via.placeholder.com/150",
+      "rating": 4.7,
+      "description": "Durable and non-slip yoga mat for all exercises.",
+      "categories": ["Sports & Outdoors", "Fitness"],
+      "freeShipping": false,
+      "brand": "Manduka"
+    }
+  ],
+  "categories": [
+    {
+      "key": 1,
+      "title": "Beauty & Personal Care",
+      "value": 12,
+      "children": [
+        {
+          "key": 11,
+          "title": "Makeup",
+          "value": 6
+        },
+        {
+          "key": 12,
+          "title": "Skin Care",
+          "value": 6
+        }
+      ]
+    },
+    {
+      "key": 2,
+      "title": "Books",
+      "value": 4,
+      "children": [
+        {
+          "key": 21,
+          "title": "Fiction",
+          "value": 2
+        },
+        {
+          "key": 22,
+          "title": "Non-Fiction",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "key": 3,
+      "title": "Electronics",
+      "value": 8,
+      "children": [
+        {
+          "key": 31,
+          "title": "Computers",
+          "value": 4
+        },
+        {
+          "key": 32,
+          "title": "Smartphones",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "key": 4,
+      "title": "Fashion",
+      "value": 10,
+      "children": [
+        {
+          "key": 41,
+          "title": "Clothing",
+          "value": 5
+        },
+        {
+          "key": 42,
+          "title": "Shoes",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "key": 5,
+      "title": "Home & Kitchen",
+      "value": 6,
+      "children": [
+        {
+          "key": 51,
+          "title": "Appliances",
+          "value": 3
+        },
+        {
+          "key": 52,
+          "title": "Cookware",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "key": 6,
+      "title": "Sports & Outdoors",
+      "value": 7,
+      "children": [
+        {
+          "key": 61,
+          "title": "Fitness",
+          "value": 4
+        },
+        {
+          "key": 62,
+          "title": "Camping",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "key": 7,
+      "title": "Toys & Games",
+      "value": 5,
+      "children": [
+        {
+          "key": 71,
+          "title": "Board Games",
+          "value": 3
+        },
+        {
+          "key": 72,
+          "title": "Outdoor Games",
+          "value": 2
+        }
+      ]
+    }
+  ]
+}
