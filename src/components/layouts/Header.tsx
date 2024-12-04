@@ -3,7 +3,19 @@ import './Header.scss'
 import { Input } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 
-export default function Header() {
+interface IHeaderProps {
+  onSearchChange: (key: string, value: string) => void
+}
+
+export default function Header(prop: IHeaderProps) {
+
+  const { onSearchChange } = prop;
+
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTimeout(() => {
+      onSearchChange('search', e.target.value)
+    }, 500)
+  }
   return (
     <div className="header-container">
       {/* <img src="src\assets\icons\logo-icon.svg" alt="logo" height={24} width={92} /> */}
@@ -17,6 +29,7 @@ export default function Header() {
           placeholder="Product, brand, color, ..."
           prefix={<SearchOutlined style={{color: '#e2a400'}} />}
           className="placeholder:text-sm w-[740px] h-[64px] border-0"
+          onChange={onChange}
         />
       </div>
     </div>
