@@ -6,21 +6,30 @@ import { ReloadOutlined, CaretDownOutlined , CaretUpOutlined, SearchOutlined } f
 import Header from '../components/layouts/Header';
 import CardItem from '../components/CardItem';
 import './HomePage.scss';
-import { Product, Category, Filter, Brand } from '../types';
+import { Product, Category, Filter, BrandOption, ResponseData } from '../types';
 
 export default function HomePage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(8);
-  const [activeItem, setActiveItem] = useState<number>(-1);
+  const [pageSize, setPageSize] = useState<number>(16);
+  const [activeItem, setActiveItem] = useState<string>('');
   const [products, setProducts] = useState<Product[]>([]);
-  const [queryFilter, setQueryFilter] = useState<Filter>({});
+  const [queryFilter, setQueryFilter] = useState<Filter>({freeShipping: true});
   const [paginatedItems, setPaginatedItems] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [brands, setBrands] = useState<Brand[]>([]);
+  const [brands, setBrands] = useState<ResponseData>({});
+  const [ratings, setRatings] = useState<ResponseData>({
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+  });
+  const [priceRange, setPriceRange] = useState<[number, number]>([Infinity, -Infinity]);
+  const [brandOptions, setBrandOptions] = useState<BrandOption[]>([]);
 
-  const toggleCategory = (key: number, value: string) => {
+  const toggleCategory = (value: string) => {
     onFilterChange('category', value );
-    setActiveItem((prev) => (prev === key ? -1 : key));
+    setActiveItem((prev) => (prev === value ? '' : value));
   };
 
   const handlePageChange = (page: number) => {
@@ -40,10 +49,6 @@ export default function HomePage() {
     setQueryFilter({
       ...queryFilter, [key]: value
     });
-  }
-
-  const onChangeComplete = (value: number[]) => {
-    console.log('Price range changed', value);
   }
 
   const fetchData = async () => {
@@ -81,11 +86,11 @@ export default function HomePage() {
     const tmpList: string[] = Array.from(
       new Set(res.data?.map((product: Product) => product.brand))
     )
-    const brandsData: Brand[] = tmpList.map((uniqueBrand) => ({
+    const brandsData: BrandOption[] = tmpList.map((uniqueBrand) => ({
       label: uniqueBrand,
       value: uniqueBrand,
     }));
-    setBrands(brandsData);
+    // setBrands(brandsData);
     setProducts(res.data);
     console.log(res.data);
     const startIndex = (currentPage - 1) * pageSize;
@@ -97,21 +102,103 @@ export default function HomePage() {
     }
   }
 
-  const fetchCategories = async () => {
+  const fetchAllData = async () => {
     try {
-      const res = await axios.get('http://localhost:3000/categories');
-      console.log(res.data);
-      setCategories(res.data);
+      const productRes = await axios.get('http://localhost:3000/products');
+      const categoryRes = await axios.get('http://localhost:3000/categories');
+
+      setCategories(categoryRes.data);
+      setProducts(productRes.data);
+      const startIndex = (currentPage - 1) * pageSize;
+      const paginatedList = productRes.data.slice(startIndex, startIndex + pageSize);
+      setPaginatedItems(paginatedList);
+      getSubDataFromProduct(productRes.data);
     } catch (error) {
       console.log(error);
     }
   }
 
+  const fetchFilterData = async () => {
+    console.log('111');
+    
+    try {
+      let res
+      const params = new URLSearchParams();
+      if (queryFilter.priceRange) params.append("price_gte", queryFilter.priceRange[0].toString());
+      if (queryFilter.priceRange?.length === 2) params.append("price_lte", queryFilter.priceRange[1].toString());
+      if (queryFilter.rating) params.append("rating", queryFilter.rating.toString());
+      if (!queryFilter.freeShipping) params.append("free_shipping", "false")
+        else params.append("freeShipping", "true");
+      if(queryFilter?.rating || queryFilter?.priceRange?.length === 2 || queryFilter?.brand?.length) {
+        res = await axios.get(`http://localhost:3000/products?${params.toString()}`);
+      }
+      let filterProducts: Product[] = res?.data || products; 
+      if (queryFilter?.search) {
+        console.log('queryFilter.search', queryFilter.search);
+        
+        filterProducts = filterProducts.filter((product) => product.name.includes(queryFilter.search ?? ''));
+        console.log('filterProducts', filterProducts);
+        console.log('filterProducts', filterProducts.length);
+        
+        
+        setProducts(filterProducts);
+        getSubDataFromProduct(filterProducts);
+      }
+      if (queryFilter?.category) {
+        console.log(222);
+        
+        filterProducts = filterProducts.filter((product) => product.categories.includes(queryFilter.category ?? ''));
+      }
+      if (queryFilter?.brand?.length) {
+        console.log(444);
+        
+        filterProducts = filterProducts.filter((product) => queryFilter.brand?.includes(product.brand));
+      }
+      getSubDataFromProduct(filterProducts);
+      setProducts(filterProducts);
+      const startIndex = (currentPage - 1) * pageSize;
+      const paginatedList = filterProducts.slice(startIndex, startIndex + pageSize);
+      setPaginatedItems(paginatedList);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  const getSubDataFromProduct = (products: Product[]) => {
+    const brandCount: { [key: string]: number } = {};
+      let minPrice = Infinity;
+      let maxPrice = -Infinity;
+  
+      products.forEach((product: Product) => {
+        brandCount[product.brand] = (brandCount[product.brand] || 0) + 1;
+  
+        if (product.price < minPrice) minPrice = product.price;
+        if (product.price > maxPrice) maxPrice = product.price;
+  
+        if (product.rating >= 1 && product.rating <= 5) {
+          ratings[product.rating] += 1;
+        }
+      });
+      const brandsParse = Object.keys(brandCount).map((key) => ({
+        label: key,
+        value: key,
+      }));
+      setRatings({ ...ratings });
+      setPriceRange([minPrice, maxPrice]);
+      setBrands(brandCount);
+      setBrandOptions(brandsParse);
+  }
+
   useEffect(() => {
-    setCurrentPage(1);
-    fetchData();
-    fetchCategories();
-    // fetchBrands();
+    fetchAllData();
+  }, []);
+
+  useEffect(() => {
+    fetchFilterData()
+    // let dataFilter: Product[] = [];
+    // if(queryFilter.search) {
+    //   dataFilter = products.filter((product) => product.name.includes(queryFilter.search ?? ''));
+    // }
   }, [queryFilter]);
 
   useEffect (() => {
@@ -135,37 +222,37 @@ export default function HomePage() {
             <h2 className="filter-title">Category</h2>
             <ul className="mt-2">
               {
-                categories.map((category) => (
-                  <li key={category.key} className="mb-3" >
+                categories.slice().map((category, index) => (
+                  <li key={index} className="mb-3" >
                     <div
-                      className={`flex items-center gap-2 cursor-pointer ${(activeItem === category.key  || category.children?.find((item) => item.key === activeItem)) && 'font-semibold'} `}
-                      onClick={() => toggleCategory(category.key, category.title)}
+                      className={`flex items-center gap-2 cursor-pointer ${(activeItem === category.name  || category.subcategories?.find((item) => item.name === activeItem)) && 'font-semibold'} `}
+                      onClick={() => toggleCategory(category.name)}
                     >
-                      {activeItem === category.key ? (
+                      {activeItem === category.name ? (
                         <CaretDownOutlined style={{ color: "grey", fontSize: "8px" }} />
                       ) : (
                         <CaretUpOutlined style={{ color: "grey", fontSize: "8px" }} />
                       )}
                       <div className="flex items-center gap-2">
-                        <span>{category.title}</span>
-                        <div className="text-xs font-semibold p-0.5 rounded bg-[rgba(65,66,71,.08)]">{category.value}</div>
+                        <span>{category.name}</span>
+                        <div className="text-xs font-semibold p-0.5 rounded bg-[rgba(65,66,71,.08)]">{category.total}</div>
                       </div>
                     </div>
-                    {(activeItem === category.key  || category.children?.find((item) => item.key === activeItem)) && category.children && (
-                      <ul className="ml-6">
-                        {category.children.map((child) => (
-                          <li key={child.key} className="mb-3" onClick={() => toggleCategory(child.key, child.title)}>
-                            <div className={`flex items-center gap-2 cursor-pointer ${activeItem === child.key && 'font-semibold'} `}>
+                    {(activeItem === category.name  || category.subcategories?.find((item) => item.name === activeItem)) && category.subcategories && (
+                      <ul className="ml-6 mt-2">
+                        {category.subcategories.map((child, childIndex) => (
+                          <li key={childIndex} className="mb-3" onClick={() => toggleCategory(child.name)}>
+                            <div className={`flex items-center gap-2 cursor-pointer ${activeItem === child.name && 'font-semibold'} `}>
                               {
-                                activeItem === child.key ? (
+                                activeItem === child.name ? (
                                 <CaretDownOutlined style={{ color: "grey", fontSize: "8px" }} />
                                 ) : (
                                   <CaretUpOutlined style={{ color: "grey", fontSize: "8px" }} />
                                 )
                               }
                               <div className="flex items-center gap-2">
-                                <span>{category.title}</span>
-                                <div className="text-xs font-semibold p-0.5 rounded bg-[rgba(65,66,71,.08)]">{child.value}</div>
+                                <span>{child.name}</span>
+                                <div className="text-xs font-semibold p-0.5 rounded bg-[rgba(65,66,71,.08)]">{child.total}</div>
                               </div>
                             </div>
                           </li>
@@ -187,7 +274,7 @@ export default function HomePage() {
               style={{ backgroundColor: '#F4F4F4', borderRadius: '4px', border: 'none' }}
             />
             <div className="mt-4">
-              <Checkbox.Group options={brands} value={queryFilter.brand} className="flex flex-col gap-2"/>
+              <Checkbox.Group options={brandOptions} value={queryFilter.brand} onChange={(value) => onFilterChange('brand', value)} className="flex flex-col gap-2"/>
             </div>
           </div>
           <Divider style={{margin: 0}} />
@@ -195,8 +282,8 @@ export default function HomePage() {
             <h2 className="filter-title">Price</h2>
             <Slider
               range
-              min={1}
-              max={4800}
+              min={priceRange[0]}
+              max={priceRange[1]}
               styles={
                 {
                   track: {
@@ -205,8 +292,8 @@ export default function HomePage() {
                 }
               }
               step={1}
-              defaultValue={[1, 4800]}
-              onChangeComplete={onChangeComplete}
+              defaultValue={priceRange}
+              onChangeComplete={(value) => onFilterChange('priceRange', value)}
             />
           </div>
           <Divider style={{margin: 0}} />
@@ -216,7 +303,12 @@ export default function HomePage() {
               <span className="text-[.9rem] ">Display only items with free shipping</span>
               <div className="flex items-center gap-1">
                 <span className={`${true && 'text-[#e2a400]'} text-[.8rem]`}>{true? 'Yes' : 'No'}</span>
-                <Switch defaultChecked size={'small'} className="bg-[#e2a400] text-[#e2a400]"/>
+                <Switch
+                  value={queryFilter.freeShipping}
+                  onChange={(value) => onFilterChange('freeShipping', value)}
+                  defaultChecked size={'small'}
+                  className="text-[#e2a400]"
+                />
               </div>
             </div>
           </div>
@@ -224,10 +316,10 @@ export default function HomePage() {
           <div className="py-8">
             <h2 className="filter-title">Ratings</h2>
             <div>
-              {[5, 4, 3, 2, 1].map((rating, index) => (
-                <div className="flex items-center gap-2" key={index}>
-                  <Rate disabled defaultValue={rating} />
-                  <span className="ratings-count">111</span>
+              {Object.entries(ratings).reverse().map(([key, value]) => (
+                <div className="flex items-center gap-2 cursor-pointer" key={key} onClick={() => onFilterChange('rating', key)}>
+                  <Rate disabled defaultValue={Number(key)} />
+                  <span className="ratings-count">{value}</span>
                 </div>
               ))}
             </div>
@@ -247,14 +339,13 @@ export default function HomePage() {
               ]}
             />
             <Select
-              defaultValue={8}
-              // style={{ width: 150 }}
+              defaultValue={16}
               onChange={handlePageSizeChange}
               variant="borderless"
               options={[
-                { value: 8, label: '8 hits per page' },
                 { value: 16, label: '16 hits per page' },
                 { value: 32, label: '32 hits per page' },
+                { value: 64, label: '64 hits per page' },
               ]}
             />
           </div>

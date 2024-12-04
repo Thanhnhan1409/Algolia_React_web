@@ -10,7 +10,9 @@ interface ICardItemProps {
 export default function CardItem({item}: ICardItemProps) {
   return (
     <div className="card-item-container">
-      <img src={item.image} alt="product" width={174} height={174} className="mx-[auto]" />
+      <div className="flex items-center justify-center w-[174px] h-[174px] max-w-[174px] max-h-[174px]">
+        <img src={item.image} alt="product" width={174} height={174} className="mx-[auto] max-w-[174px] max-h-[174px] object-contain" />
+      </div>
       <div>
         <div className="text-[12px] font-semibold mt-1 opacity-70 uppercase mt-3 mb-2">{item.categories[0]}</div>
         <div className="text-[.9rem] font-bold ">{ item.name }</div>
