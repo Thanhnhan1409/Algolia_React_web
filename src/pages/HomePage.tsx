@@ -6,7 +6,7 @@ import { ReloadOutlined, CaretDownOutlined , CaretUpOutlined, SearchOutlined } f
 import Header from '../components/layouts/Header';
 import CardItem from '../components/CardItem';
 import './HomePage.scss';
-import { Product, Category, Filter, BrandOption, ResponseData, ActiveCatetories } from '../types';
+import { Product, Category, Filter, BrandOption, ResponseData, ActiveCatetories, ValueChange } from '../types';
 
 export default function HomePage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -17,7 +17,7 @@ export default function HomePage() {
   const [queryFilter, setQueryFilter] = useState<Filter>({freeShipping: true});
   const [paginatedItems, setPaginatedItems] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [brands, setBrands] = useState<ResponseData>({});
+  const [isChangeValue, setIsChangeValue] = useState<ValueChange>();
   const [ratings, setRatings] = useState<ResponseData>({
     1: 0,
     2: 0,
@@ -27,6 +27,8 @@ export default function HomePage() {
   });
   const [priceRange, setPriceRange] = useState<[number, number]>([Infinity, -Infinity]);
   const [brandOptions, setBrandOptions] = useState<BrandOption[]>([]);
+  const [activeRating, setActiveRating] = useState<string>();
+  const [showAll, setShowAll] = useState<boolean>(false);
 
   const toggleCategory = (data: ActiveCatetories) => {
     if (activeItem.parent !== data.parent) {
@@ -60,14 +62,46 @@ export default function HomePage() {
 
   const handleClearFilter = () => {
     setActiveItem({});
-    setQueryFilter({});
+    setQueryFilter({freeShipping: true});
     fetchAllData();
+    setPriceRange([Infinity, -Infinity]);
   }
 
   const onFilterChange = (key: string, value: any) => {
     setQueryFilter({
       ...queryFilter, [key]: value
     });
+    if(key === 'brand') {
+      setIsChangeValue({
+        rating: false,
+        brand: true
+      })
+    } else if(key === 'rating') {
+      setIsChangeValue({
+        brand: false,
+        rating: true
+      })
+    } else {
+      setIsChangeValue({
+        brand: false,
+        rating: false
+      })
+    }
+  }
+
+  const toggleRating = (key: string) => {
+    if (activeRating === key) {
+      setActiveRating('');
+      onFilterChange('rating', undefined);
+    } else {
+      setActiveRating(key);
+      onFilterChange('rating', Number(key));
+    }
+  }
+
+  const filterBrandOpstions = (value: string) => {
+    const filteredOptions = brandOptions.filter((option) => option.label.toLowerCase().includes(value.toLowerCase()));
+    setBrandOptions(filteredOptions);
   }
 
   const fetchAllData = async () => {
@@ -79,38 +113,6 @@ export default function HomePage() {
       setSecondProducts(productRes.data);
       paginateItems(productRes.data);
       getSubDataFromProduct(productRes.data);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  const fetchFilterData = async () => {
-    try {
-      let res
-      const params = new URLSearchParams();
-      if (queryFilter.priceRange) params.append("price_gte", queryFilter.priceRange[0].toString());
-      if (queryFilter.priceRange?.length === 2) params.append("price_lte", queryFilter.priceRange[1].toString());
-      if (queryFilter.rating) params.append("rating", queryFilter.rating.toString());
-      if (!queryFilter.freeShipping) params.append("free_shipping", "false")
-        else params.append("freeShipping", "true");
-      if(queryFilter?.rating || queryFilter?.priceRange?.length === 2 || queryFilter?.brand?.length) {
-        res = await axios.get(`http://localhost:3000/products?${params.toString()}`);
-      }
-      let filterProducts: Product[] = res?.data || products; 
-      if (queryFilter?.search) {
-        filterProducts = filterProducts.filter((product) => 
-          product.name.toLocaleLowerCase().includes(queryFilter.search?.toLocaleLowerCase() ?? ''
-          ));
-      }
-      if (queryFilter?.category) {
-        filterProducts = filterProducts.filter((product) => product.categories.includes(queryFilter.category ?? ''));
-      }
-      if (queryFilter?.brand?.length) {
-        filterProducts = filterProducts.filter((product) => queryFilter.brand?.includes(product.brand));
-      }
-      getSubDataFromProduct(filterProducts);
-      setSecondProducts(filterProducts);
-      paginateItems(filterProducts);
     } catch (error) {
       console.log(error);
     }
@@ -142,11 +144,13 @@ export default function HomePage() {
       label: key,
       value: key,
     }));
-    setRatings(tmpRatings);
     setPriceRange([minPrice, maxPrice]);
-    setBrands(brandCount);
-    if(!queryFilter.brand?.length) {
+    // setBrands(brandCount);
+    if(!isChangeValue?.brand) {
       setBrandOptions(brandsParse);
+    }
+    if(!isChangeValue?.rating) {
+      setRatings(tmpRatings);
     }
   }
 
@@ -160,8 +164,74 @@ export default function HomePage() {
     fetchAllData();
   }, []);
 
+  const fetchFilterData = async () => {
+    try {
+      const params = new URLSearchParams();
+  
+      if (queryFilter.priceRange) {
+        params.append("price_gte", queryFilter.priceRange[0].toString());
+        if (queryFilter.priceRange.length === 2) {
+          params.append("price_lte", queryFilter.priceRange[1].toString());
+        }
+      }
+      if (queryFilter.rating) {
+        params.append("rating", queryFilter.rating.toString());
+      }
+      if (queryFilter.sort) {
+        params.append("_sort", queryFilter.sort === "asc" ? "price" : "-price");
+      }
+      if (queryFilter.freeShipping !== undefined) {
+        params.append("free_shipping", queryFilter.freeShipping ? "true" : "false");
+      }
+      if (queryFilter.brand?.length) {
+        queryFilter.brand.forEach((brand) => params.append("brand", brand));
+      }
+      if (queryFilter.category) {
+        params.append("category", queryFilter.category);
+      }
+  
+      // const newUrl = `${window.location.pathname}?${params.toString()}`;
+      // window.history.replaceState(null, "", newUrl);
+  
+      const hasFilters =
+        queryFilter.rating ||
+        (queryFilter.priceRange?.length === 2) ||
+        queryFilter.brand?.length ||
+        queryFilter.sort ||
+        queryFilter.freeShipping !== undefined;
+  
+      let filterProducts: Product[] = products;
+      if (hasFilters) {
+        const res = await axios.get(`http://localhost:3000/products?${params.toString()}`);
+        filterProducts = res.data || products;
+      }
+
+      if (queryFilter.search) {
+        filterProducts = filterProducts.filter((product) =>
+          product.name.toLowerCase().includes(queryFilter?.search?.toLowerCase() ?? '')
+        );
+      }
+      if (queryFilter.category) {
+        filterProducts = filterProducts.filter((product) =>
+          product.categories.includes(queryFilter?.category ?? '')
+        );
+      }
+      if (queryFilter.brand?.length) {
+        filterProducts = filterProducts.filter((product) =>
+          queryFilter?.brand?.includes(product.brand)
+        );
+      }
+
+      getSubDataFromProduct(filterProducts);
+      setSecondProducts(filterProducts);
+      paginateItems(filterProducts);
+    } catch (error) {
+      console.error("Error fetching filter data:", error);
+    }
+  };
+  
   useEffect(() => {
-    fetchFilterData()
+    fetchFilterData();
   }, [queryFilter]);
 
   useEffect (() => {
@@ -240,10 +310,20 @@ export default function HomePage() {
               placeholder="Search for brands..."
               prefix={<SearchOutlined style={{ color: 'rgba(0,0,0,.8)', fontSize: '12px', padding: '0 8px' }} />}
               size="large"
+              onChange={(e) => filterBrandOpstions(e.target.value)}
               style={{ backgroundColor: '#F4F4F4', borderRadius: '4px', border: 'none' }}
             />
             <div className="mt-4">
-              <Checkbox.Group options={brandOptions} value={queryFilter.brand} onChange={(value) => onFilterChange('brand', value)} className="flex flex-col gap-2"/>
+              <Checkbox.Group
+                options={showAll? brandOptions : brandOptions.slice(0, 15)} 
+                value={queryFilter.brand}
+                onChange={(value) => onFilterChange('brand', value)}
+                className="flex flex-col gap-2"
+              />
+              {
+                !showAll ? <div onClick={() => setShowAll(true)} className="text-sm text-[#e2a400] cursor-pointer mt-4 ml-6 w-fit">Load All</div>
+                : <div onClick={() => setShowAll(false)} className="text-sm text-[#e2a400] cursor-pointer mt-4 ml-6 w-fit">Show less</div>
+              }
             </div>
           </div>
           <Divider style={{margin: 0}} />
@@ -286,7 +366,10 @@ export default function HomePage() {
             <h2 className="filter-title">Ratings</h2>
             <div>
               {Object.entries(ratings).reverse().map(([key, value]) => (
-                <div className="flex items-center gap-2 cursor-pointer" key={key} onClick={() => onFilterChange('rating', key)}>
+                <div
+                  className={`flex items-center gap-2 cursor-pointer ${activeRating !== key && 'opacity-60'}`} key={key}
+                  onClick={() => toggleRating(key)}
+                >
                   <Rate disabled defaultValue={Number(key)} />
                   <span className="ratings-count">{value}</span>
                 </div>
@@ -297,12 +380,12 @@ export default function HomePage() {
         <div className="w-[946px]">
           <div className="mt-8 mb-1.5 text-end">
             <Select
-              defaultValue="featured"
+              defaultValue=""
               // style={{ width: 150 }}
-              onChange={() => console.log('Sort changed')}
+              onChange={(value) => onFilterChange('sort', value)}
               variant="borderless"
               options={[
-                { value: 'featured', label: 'Sort by featured' },
+                { value: '', label: 'Sort by featured' },
                 { value: 'asc', label: 'Price Ascending' },
                 { value: 'des', label: 'Price Descending' },
               ]}
