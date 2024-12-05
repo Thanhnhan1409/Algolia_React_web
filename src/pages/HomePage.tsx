@@ -1,18 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Divider, Pagination, Rate, Select, Slider, Switch, Input, Checkbox } from 'antd';
+import { Divider, Pagination, Rate, Select, Slider, Switch, Input, Checkbox, Empty } from 'antd';
 import { ReloadOutlined, CaretDownOutlined , CaretUpOutlined, SearchOutlined } from '@ant-design/icons';
 
 import Header from '../components/layouts/Header';
 import CardItem from '../components/CardItem';
 import './HomePage.scss';
-import { Product, Category, Filter, BrandOption, ResponseData } from '../types';
+import { Product, Category, Filter, BrandOption, ResponseData, ActiveCatetories } from '../types';
 
 export default function HomePage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(16);
-  const [activeItem, setActiveItem] = useState<string>('');
+  const [activeItem, setActiveItem] = useState<ActiveCatetories>({});
   const [products, setProducts] = useState<Product[]>([]);
+  const [secondProducts, setSecondProducts] = useState<Product[]>([]);
   const [queryFilter, setQueryFilter] = useState<Filter>({freeShipping: true});
   const [paginatedItems, setPaginatedItems] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -27,9 +28,25 @@ export default function HomePage() {
   const [priceRange, setPriceRange] = useState<[number, number]>([Infinity, -Infinity]);
   const [brandOptions, setBrandOptions] = useState<BrandOption[]>([]);
 
-  const toggleCategory = (value: string) => {
-    onFilterChange('category', value );
-    setActiveItem((prev) => (prev === value ? '' : value));
+  const toggleCategory = (data: ActiveCatetories) => {
+    if (activeItem.parent !== data.parent) {
+      setActiveItem(data);
+      onFilterChange('category', data.parent);
+    } else {
+      if(data.children === '') {
+        setActiveItem({})
+        onFilterChange('category', '');
+      }else if(activeItem.children === data.children) {
+        setActiveItem({
+          ...activeItem,
+          children: ''
+        })
+      onFilterChange('category', data.parent);
+      } else {
+        setActiveItem(data)
+      onFilterChange('category', data.children);
+      }
+    }
   };
 
   const handlePageChange = (page: number) => {
@@ -42,7 +59,9 @@ export default function HomePage() {
   };
 
   const handleClearFilter = () => {
-    setActiveItem(-1);
+    setActiveItem({});
+    setQueryFilter({});
+    fetchAllData();
   }
 
   const onFilterChange = (key: string, value: any) => {
@@ -51,67 +70,14 @@ export default function HomePage() {
     });
   }
 
-  const fetchData = async () => {
-    try {
-      let stringFilter = '';
-    if (queryFilter.search) {
-      stringFilter += `&q=${queryFilter.search}`;
-    }
-    if (queryFilter.category) {
-      stringFilter += `&category=${queryFilter.category}`;
-    }
-    if (queryFilter.priceRange) {
-      stringFilter += `&priceRange=${queryFilter.priceRange}`;
-    }
-    if (queryFilter.rating) {
-      stringFilter += `&rating=${queryFilter.rating}`;
-    }
-    if (queryFilter.brand) {
-      stringFilter += `&brand=${queryFilter.brand}`;
-    }
-    if (queryFilter.freeShipping) {
-      stringFilter += `&freeShipping=${queryFilter.freeShipping}`;
-    }
-    const params = new URLSearchParams();
-
-    if (queryFilter.search) params.append("name", queryFilter.search);
-    if (queryFilter.brand?.length) queryFilter.brand.forEach((brand) => params.append("brand", brand));
-    if (queryFilter.category) params.append("categories", queryFilter.category);
-    if (queryFilter.priceRange) params.append("price_gte", queryFilter.priceRange[0].toString());
-    if (queryFilter.priceRange?.length === 2) params.append("price_lte", queryFilter.priceRange[1].toString());
-    // if (queryFilter.freeShipping === false) params.append("freeShipping", "false")
-    //   else params.append("freeShipping", "true");
-    const res = await axios.get(`http://localhost:3000/products?${params.toString()}`);
-    console.log('brands',res.data?.map((product: Product) => product.brand));
-    const tmpList: string[] = Array.from(
-      new Set(res.data?.map((product: Product) => product.brand))
-    )
-    const brandsData: BrandOption[] = tmpList.map((uniqueBrand) => ({
-      label: uniqueBrand,
-      value: uniqueBrand,
-    }));
-    // setBrands(brandsData);
-    setProducts(res.data);
-    console.log(res.data);
-    const startIndex = (currentPage - 1) * pageSize;
-    const paginatedList = res.data.slice(startIndex, startIndex + pageSize);
-    setPaginatedItems(paginatedList);
-    console.log('Query filter changed', paginatedList);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
   const fetchAllData = async () => {
     try {
       const productRes = await axios.get('http://localhost:3000/products');
       const categoryRes = await axios.get('http://localhost:3000/categories');
-
       setCategories(categoryRes.data);
       setProducts(productRes.data);
-      const startIndex = (currentPage - 1) * pageSize;
-      const paginatedList = productRes.data.slice(startIndex, startIndex + pageSize);
-      setPaginatedItems(paginatedList);
+      setSecondProducts(productRes.data);
+      paginateItems(productRes.data);
       getSubDataFromProduct(productRes.data);
     } catch (error) {
       console.log(error);
@@ -119,8 +85,6 @@ export default function HomePage() {
   }
 
   const fetchFilterData = async () => {
-    console.log('111');
-    
     try {
       let res
       const params = new URLSearchParams();
@@ -134,59 +98,62 @@ export default function HomePage() {
       }
       let filterProducts: Product[] = res?.data || products; 
       if (queryFilter?.search) {
-        console.log('queryFilter.search', queryFilter.search);
-        
-        filterProducts = filterProducts.filter((product) => product.name.includes(queryFilter.search ?? ''));
-        console.log('filterProducts', filterProducts);
-        console.log('filterProducts', filterProducts.length);
-        
-        
-        setProducts(filterProducts);
-        getSubDataFromProduct(filterProducts);
+        filterProducts = filterProducts.filter((product) => 
+          product.name.toLocaleLowerCase().includes(queryFilter.search?.toLocaleLowerCase() ?? ''
+          ));
       }
       if (queryFilter?.category) {
-        console.log(222);
-        
         filterProducts = filterProducts.filter((product) => product.categories.includes(queryFilter.category ?? ''));
       }
       if (queryFilter?.brand?.length) {
-        console.log(444);
-        
         filterProducts = filterProducts.filter((product) => queryFilter.brand?.includes(product.brand));
       }
       getSubDataFromProduct(filterProducts);
-      setProducts(filterProducts);
-      const startIndex = (currentPage - 1) * pageSize;
-      const paginatedList = filterProducts.slice(startIndex, startIndex + pageSize);
-      setPaginatedItems(paginatedList);
+      setSecondProducts(filterProducts);
+      paginateItems(filterProducts);
     } catch (error) {
       console.log(error);
     }
   }
 
-  const getSubDataFromProduct = (products: Product[]) => {
+  const getSubDataFromProduct = (data: Product[]) => {
     const brandCount: { [key: string]: number } = {};
-      let minPrice = Infinity;
-      let maxPrice = -Infinity;
-  
-      products.forEach((product: Product) => {
-        brandCount[product.brand] = (brandCount[product.brand] || 0) + 1;
-  
-        if (product.price < minPrice) minPrice = product.price;
-        if (product.price > maxPrice) maxPrice = product.price;
-  
-        if (product.rating >= 1 && product.rating <= 5) {
-          ratings[product.rating] += 1;
-        }
-      });
-      const brandsParse = Object.keys(brandCount).map((key) => ({
-        label: key,
-        value: key,
-      }));
-      setRatings({ ...ratings });
-      setPriceRange([minPrice, maxPrice]);
-      setBrands(brandCount);
+    let minPrice = Infinity;
+    let maxPrice = -Infinity;
+    let tmpRatings: ResponseData = {
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+    }
+
+    data.forEach((product: Product) => {
+      brandCount[product.brand] = (brandCount[product.brand] || 0) + 1;
+
+      if (product.price < minPrice) minPrice = product.price;
+      if (product.price > maxPrice) maxPrice = product.price;
+
+      if (product.rating >= 1 && product.rating <= 5) {
+        tmpRatings[product.rating] += 1;
+      }
+    });
+    const brandsParse = Object.keys(brandCount).map((key) => ({
+      label: key,
+      value: key,
+    }));
+    setRatings(tmpRatings);
+    setPriceRange([minPrice, maxPrice]);
+    setBrands(brandCount);
+    if(!queryFilter.brand?.length) {
       setBrandOptions(brandsParse);
+    }
+  }
+
+  const paginateItems = (data: Product[]) => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const paginatedList = data.slice(startIndex, startIndex + pageSize);
+    setPaginatedItems(paginatedList);
   }
 
   useEffect(() => {
@@ -195,10 +162,6 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchFilterData()
-    // let dataFilter: Product[] = [];
-    // if(queryFilter.search) {
-    //   dataFilter = products.filter((product) => product.name.includes(queryFilter.search ?? ''));
-    // }
   }, [queryFilter]);
 
   useEffect (() => {
@@ -212,9 +175,9 @@ export default function HomePage() {
         <nav className="w-[260px] mr-[60px] flex flex-col">
           <div className="flex justify-between h-fit min-h-[80px] mb-2">
             <h1 className="font-semibold text-2xl text-center my-[auto]">Filters</h1>
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center cursor-pointer" onClick={handleClearFilter}>
               <ReloadOutlined style={{fontSize: '10px'}}/>
-              <p className="text-xs text-[rgba(33,36,61,.5)] cursor-pointer" onClick={handleClearFilter}>Refresh Filter</p>
+              <p className="text-xs text-[rgba(33,36,61,.5)]">Refresh Filter</p>
             </div>
           </div>
           <Divider style={{margin: 0}} />
@@ -225,10 +188,13 @@ export default function HomePage() {
                 categories.slice().map((category, index) => (
                   <li key={index} className="mb-3" >
                     <div
-                      className={`flex items-center gap-2 cursor-pointer ${(activeItem === category.name  || category.subcategories?.find((item) => item.name === activeItem)) && 'font-semibold'} `}
-                      onClick={() => toggleCategory(category.name)}
+                      className={`flex items-center gap-2 cursor-pointer ${(activeItem.parent === category.name) && 'font-semibold'} `}
+                      onClick={() => toggleCategory({
+                        parent: category.name,
+                        children: ''
+                      })}
                     >
-                      {activeItem === category.name ? (
+                      {activeItem.parent === category.name ? (
                         <CaretDownOutlined style={{ color: "grey", fontSize: "8px" }} />
                       ) : (
                         <CaretUpOutlined style={{ color: "grey", fontSize: "8px" }} />
@@ -238,13 +204,16 @@ export default function HomePage() {
                         <div className="text-xs font-semibold p-0.5 rounded bg-[rgba(65,66,71,.08)]">{category.total}</div>
                       </div>
                     </div>
-                    {(activeItem === category.name  || category.subcategories?.find((item) => item.name === activeItem)) && category.subcategories && (
+                    {(activeItem.parent === category.name) && category.subcategories && (
                       <ul className="ml-6 mt-2">
                         {category.subcategories.map((child, childIndex) => (
-                          <li key={childIndex} className="mb-3" onClick={() => toggleCategory(child.name)}>
-                            <div className={`flex items-center gap-2 cursor-pointer ${activeItem === child.name && 'font-semibold'} `}>
+                          <li key={childIndex} className="mb-3" onClick={() => toggleCategory({
+                            parent: category.name,
+                            children: child.name
+                          })}>
+                            <div className={`flex items-center gap-2 cursor-pointer ${activeItem.children === child.name && 'font-semibold'} `}>
                               {
-                                activeItem === child.name ? (
+                                activeItem.children === child.name ? (
                                 <CaretDownOutlined style={{ color: "grey", fontSize: "8px" }} />
                                 ) : (
                                   <CaretUpOutlined style={{ color: "grey", fontSize: "8px" }} />
@@ -282,8 +251,8 @@ export default function HomePage() {
             <h2 className="filter-title">Price</h2>
             <Slider
               range
-              min={priceRange[0]}
-              max={priceRange[1]}
+              min={1}
+              max={1555}
               styles={
                 {
                   track: {
@@ -351,19 +320,27 @@ export default function HomePage() {
           </div>
           <Divider />
           <div>
-            <div className="grid grid-cols-4 gap-12">
-              {paginatedItems.map((item, index) => (
-                <CardItem item={item} key={index} />
-              ))}
-            </div>
-            <Pagination
-              align="center"
-              current={currentPage}
-              pageSize={pageSize}
-              total={products.length}
-              onChange={handlePageChange}
-              showSizeChanger={false}
-            />
+              {!paginatedItems.length?
+              <div className="mt-20">
+                <Empty />
+              </div>
+              : (<div className="grid grid-cols-4 gap-12">
+                  {paginatedItems.map((item, index) => (
+                    <CardItem item={item} key={index} />
+                  ))}
+                </div>)
+              }
+              {
+                secondProducts.length > pageSize && 
+                <Pagination
+                  align="center"
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={secondProducts.length}
+                  onChange={handlePageChange}
+                  showSizeChanger={false}
+                />
+              }
           </div>
         </div>
       </main>
