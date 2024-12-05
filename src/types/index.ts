@@ -59,6 +59,7 @@ export type Filter = {
   rating?: number
   brand?: string[]
   freeShipping?: boolean
+  sort?: string
 }
 
 export type BrandOption = {
@@ -84,4 +85,9 @@ export type Category = {
 export type ActiveCatetories = {
   parent?: string
   children?: string
+}
+
+export type ValueChange = {
+  brand?: boolean
+  rating?: boolean
 }
