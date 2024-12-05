@@ -80,3 +80,8 @@ export type Category = {
   total: number;
   subcategories: Subcategory[];
 };
+
+export type ActiveCatetories = {
+  parent?: string
+  children?: string
+}
