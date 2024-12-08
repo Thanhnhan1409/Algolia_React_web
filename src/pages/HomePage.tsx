@@ -7,6 +7,7 @@ import Header from '../components/layouts/Header';
 import CardItem from '../components/CardItem';
 import './HomePage.scss';
 import { Product, Category, Filter, BrandOption, ResponseData, ActiveCatetories, ValueChange } from '../types';
+import { initializeQueryFilter } from '../Utils/getFilterParams';
 
 export default function HomePage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -14,7 +15,7 @@ export default function HomePage() {
   const [activeItem, setActiveItem] = useState<ActiveCatetories>({});
   const [products, setProducts] = useState<Product[]>([]);
   const [secondProducts, setSecondProducts] = useState<Product[]>([]);
-  const [queryFilter, setQueryFilter] = useState<Filter>({freeShipping: true});
+  const [queryFilter, setQueryFilter] = useState<Filter>(initializeQueryFilter());
   const [paginatedItems, setPaginatedItems] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isChangeValue, setIsChangeValue] = useState<ValueChange>();
@@ -106,13 +107,8 @@ export default function HomePage() {
 
   const fetchAllData = async () => {
     try {
-      const productRes = await axios.get('http://localhost:3000/products');
       const categoryRes = await axios.get('http://localhost:3000/categories');
       setCategories(categoryRes.data);
-      setProducts(productRes.data);
-      setSecondProducts(productRes.data);
-      paginateItems(productRes.data);
-      getSubDataFromProduct(productRes.data);
     } catch (error) {
       console.log(error);
     }
@@ -167,7 +163,6 @@ export default function HomePage() {
   const fetchFilterData = async () => {
     try {
       const params = new URLSearchParams();
-  
       if (queryFilter.priceRange) {
         params.append("price_gte", queryFilter.priceRange[0].toString());
         if (queryFilter.priceRange.length === 2) {
@@ -189,10 +184,9 @@ export default function HomePage() {
       if (queryFilter.category) {
         params.append("category", queryFilter.category);
       }
-  
-      // const newUrl = `${window.location.pathname}?${params.toString()}`;
-      // window.history.replaceState(null, "", newUrl);
-  
+
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(null, "", newUrl);
       const hasFilters =
         queryFilter.rating ||
         (queryFilter.priceRange?.length === 2) ||
@@ -205,7 +199,6 @@ export default function HomePage() {
         const res = await axios.get(`http://localhost:3000/products?${params.toString()}`);
         filterProducts = res.data || products;
       }
-
       if (queryFilter.search) {
         filterProducts = filterProducts.filter((product) =>
           product.name.toLowerCase().includes(queryFilter?.search?.toLowerCase() ?? '')
@@ -221,7 +214,6 @@ export default function HomePage() {
           queryFilter?.brand?.includes(product.brand)
         );
       }
-
       getSubDataFromProduct(filterProducts);
       setSecondProducts(filterProducts);
       paginateItems(filterProducts);
@@ -231,6 +223,7 @@ export default function HomePage() {
   };
   
   useEffect(() => {
+    if(queryFilter)
     fetchFilterData();
   }, [queryFilter]);
 
@@ -321,8 +314,8 @@ export default function HomePage() {
                 className="flex flex-col gap-2"
               />
               {
-                !showAll ? <div onClick={() => setShowAll(true)} className="text-sm text-[#e2a400] cursor-pointer mt-4 ml-6 w-fit">Load All</div>
-                : <div onClick={() => setShowAll(false)} className="text-sm text-[#e2a400] cursor-pointer mt-4 ml-6 w-fit">Show less</div>
+                brandOptions?.length > 15 && (!showAll ? <div onClick={() => setShowAll(true)} className="text-sm text-[#e2a400] cursor-pointer mt-4 ml-6 w-fit">Load All</div>
+                : <div onClick={() => setShowAll(false)} className="text-sm text-[#e2a400] cursor-pointer mt-4 ml-6 w-fit">Show less</div>)
               }
             </div>
           </div>
